@@ -1,112 +1,118 @@
-import React, { useState, useEffect } from "react"
-import axios from "axios"
+import React, { useState, useEffect } from "react";
+import axios from "axios";
 
 function App() {
   const [theme, setTheme] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('theme') || 'light'
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("theme") || "light";
     }
-    return 'light'
-  })
-  const [activeTab, setActiveTab] = useState("upload")
-  const [uniqueIdentifier, setUniqueIdentifier] = useState("")
-  const [data, setData] = useState("")
-  const [storage, setStorage] = useState("local")
-  const [responseMessage, setResponseMessage] = useState("")
-  const [retrieveError, setRetrieveError] = useState("")
-  const [retrievedData, setRetrievedData] = useState(null)
-  const [selectedFile, setSelectedFile] = useState(null)
-  const [isLoading, setIsLoading] = useState(false)
+    return "light";
+  });
+  const [activeTab, setActiveTab] = useState("upload");
+  const [uniqueIdentifier, setUniqueIdentifier] = useState("");
+  const [data, setData] = useState("");
+  const [storage, setStorage] = useState("local");
+  const [responseMessage, setResponseMessage] = useState("");
+  const [retrieveError, setRetrieveError] = useState("");
+  const [retrievedData, setRetrievedData] = useState(null);
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   const apiBaseUrl = "/api/v1/Dr.ive";
 
   useEffect(() => {
-    document.documentElement.classList.toggle('dark', theme === 'dark')
-    localStorage.setItem('theme', theme)
-  }, [theme])
+    document.documentElement.classList.toggle("dark", theme === "dark");
+    localStorage.setItem("theme", theme);
+  }, [theme]);
 
   const toggleTheme = () => {
-    setTheme(prevTheme => prevTheme === 'light' ? 'dark' : 'light')
-  }
+    setTheme((prevTheme) => (prevTheme === "light" ? "dark" : "light"));
+  };
 
   const handleUpload = async () => {
-    setIsLoading(true)
+    setIsLoading(true);
     try {
-      const formData = new FormData()
-      formData.append("unique_identifier", uniqueIdentifier)
-      formData.append("storage", storage)
+      const formData = new FormData();
+      formData.append("unique_identifier", uniqueIdentifier);
+      formData.append("storage", storage);
 
       if (selectedFile) {
-        formData.append("file", selectedFile)
+        formData.append("file", selectedFile);
       } else {
-        formData.append("data", btoa(data))
+        formData.append("data", btoa(data));
       }
 
       const response = await axios.post(`${apiBaseUrl}/store`, formData, {
         headers: { "Content-Type": "multipart/form-data" },
-      })
-      setResponseMessage(response.data.message)
-      setRetrieveError("")
+      });
+      setResponseMessage(response.data.message);
+      setRetrieveError("");
     } catch (error) {
       setResponseMessage(
         error.response?.data?.error || "An error occurred during upload"
-      )
+      );
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   const handleRetrieve = async () => {
-    setIsLoading(true)
+    setIsLoading(true);
     try {
-      const response = await axios.get(
-        `${apiBaseUrl}/show/${uniqueIdentifier}`
-      )
+      const response = await axios.get(`${apiBaseUrl}/show/${uniqueIdentifier}`);
 
       if (response.data.data_type === "text") {
         setRetrievedData({
           type: "text",
           content: response.data.data,
-        })
+        });
       } else if (response.data.data_type === "file") {
-        const fileData = response.data.data
-        const filename = response.data.filename
+        const base64Data = response.data.data;
+        const filename = response.data.filename;
+        const filetype = response.data.filetype;
 
-        const blob = new Blob([fileData], { type: response.data.filetype })
-        const url = window.URL.createObjectURL(blob)
+        // Decode Base64 data and create a Blob
+        const byteCharacters = atob(base64Data); // Decode base64
+        const byteNumbers = new Array(byteCharacters.length).fill(0).map((_, i) =>
+          byteCharacters.charCodeAt(i)
+        );
+        const byteArray = new Uint8Array(byteNumbers);
+        const blob = new Blob([byteArray], { type: filetype });
 
-        const link = document.createElement("a")
-        link.href = url
-        link.setAttribute("download", filename)
-        document.body.appendChild(link)
-        link.click()
-        document.body.removeChild(link)
+        // Create a download link
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.setAttribute("download", filename);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
 
-        setRetrievedData(null)
+        setRetrievedData(null);
       }
 
-      setRetrieveError("")
-      setResponseMessage("Data retrieved successfully")
+      setRetrieveError("");
+      setResponseMessage("Data retrieved successfully");
     } catch (error) {
-      setRetrieveError(
-        error.response?.data?.error || "Data not found"
-      )
-      setResponseMessage("")
+      setRetrieveError(error.response?.data?.error || "Data not found");
+      setResponseMessage("");
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-200">
       <div className="container mx-auto px-4 py-8">
         <header className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold text-blue-600 dark:text-blue-400">Dr.ive API Client</h1>
+          <h1 className="text-3xl font-bold text-blue-600 dark:text-blue-400">
+            Dr.ive Client
+          </h1>
           <button
             onClick={toggleTheme}
             className="p-2 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors duration-200"
           >
-            {theme === 'light' ? '🌙' : '☀️'}
+            {theme === "light" ? "🌙" : "☀️"}
           </button>
         </header>
 
@@ -114,28 +120,28 @@ function App() {
           <div className="flex border-b border-gray-200 dark:border-gray-700">
             <button
               className={`flex-1 py-4 px-6 text-center font-medium ${
-                activeTab === 'upload'
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                activeTab === "upload"
+                  ? "bg-blue-500 text-white"
+                  : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
               } transition-colors duration-200`}
-              onClick={() => setActiveTab('upload')}
+              onClick={() => setActiveTab("upload")}
             >
               Upload Data
             </button>
             <button
               className={`flex-1 py-4 px-6 text-center font-medium ${
-                activeTab === 'retrieve'
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                activeTab === "retrieve"
+                  ? "bg-blue-500 text-white"
+                  : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
               } transition-colors duration-200`}
-              onClick={() => setActiveTab('retrieve')}
+              onClick={() => setActiveTab("retrieve")}
             >
               Retrieve Data
             </button>
           </div>
 
           <div className="p-6">
-            {activeTab === 'upload' && (
+            {activeTab === "upload" && (
               <div className="space-y-4">
                 <div>
                   <label htmlFor="unique-identifier" className="block text-sm font-medium mb-1">
@@ -199,7 +205,7 @@ function App() {
               </div>
             )}
 
-            {activeTab === 'retrieve' && (
+            {activeTab === "retrieve" && (
               <div className="space-y-4">
                 <div>
                   <label htmlFor="retrieve-identifier" className="block text-sm font-medium mb-1">
@@ -252,8 +258,7 @@ function App() {
         )}
       </div>
     </div>
-  )
+  );
 }
 
-export default App
-
+export default App;
