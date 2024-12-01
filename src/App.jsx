@@ -18,7 +18,7 @@ function App() {
   const [selectedFile, setSelectedFile] = useState(null)
   const [isLoading, setIsLoading] = useState(false)
 
-  const apiBaseUrl = "http://13.36.243.214/api/v1/Dr.ive"
+  const apiBaseUrl = "/api/v1/Dr.ive";
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', theme === 'dark')
